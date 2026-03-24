@@ -1,0 +1,5 @@
+{
+  "name": "ADHD Multimodal AI Dashboard",
+  "description": "Explainable Multimodal AI for ADHD diagnosis with 3D brain visualization and SHAP explainability.",
+  "requestFramePermissions": []
+}

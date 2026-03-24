@@ -1,0 +1,111 @@
+# =============================================================================
+# ADHD Multimodal AI — .gitignore
+# =============================================================================
+
+# ── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+eggs/
+*.whl
+.venv/
+venv/
+env/
+.env/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+*.cover
+*.log
+.python-version
+
+# ── Jupyter Notebooks ───────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Node / JavaScript ───────────────────────────────────────────────────────
+node_modules/
+*.tsbuildinfo
+.npm
+.eslintcache
+
+# ── Build Outputs ───────────────────────────────────────────────────────────
+dist/
+build/
+coverage/
+
+# ── Environment & Secrets ───────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ── IDE & Editor ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# ── OS Artifacts ────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+._*
+
+# ── ML Model Artifacts (large binary files) ─────────────────────────────────
+*.pth
+*.pt
+*.ckpt
+*.onnx
+*.h5
+*.hdf5
+*.pkl
+*.joblib
+*.tflite
+*.mlmodel
+*.pb
+
+# ── Data Files ──────────────────────────────────────────────────────────────
+*.csv
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.xlsx
+*.xls
+
+# ── Generated Reports & Figures ─────────────────────────────────────────────
+adhd_xai_results.png
+adhd_xai_results.json
+individual_plots/
+
+# ── Experiment Tracking ─────────────────────────────────────────────────────
+wandb/
+mlruns/
+mlartifacts/
+.lightning_logs/
+runs/
+tb_logs/
+
+# ── Kaggle ──────────────────────────────────────────────────────────────────
+.kaggle/
+
+# ── Docker ──────────────────────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+*.bak
+*.tmp
+*.temp

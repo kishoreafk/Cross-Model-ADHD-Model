@@ -1,0 +1,33 @@
+[
+  {
+    "act_mean":0,
+    "act_std":0,
+    "act_median":0,
+    "act_range":0,
+    "act_skew":0,
+    "act_kurtosis":0,
+    "act_iqr":0,
+    "act_p10":0,
+    "act_p90":0,
+    "act_cv":0,
+    "act_transitions":0,
+    "act_n_bouts":0,
+    "act_mean_bout_len":0,
+    "act_short_bout_frac":0,
+    "hr_mean":0,
+    "hr_std":0,
+    "hr_median":0,
+    "hr_range":0,
+    "hr_skew":0,
+    "hr_kurtosis":0,
+    "hr_iqr":0,
+    "hr_p10":0,
+    "hr_p90":0,
+    "hr_cv":0,
+    "hr_transitions":0,
+    "hr_rmssd":0,
+    "hr_sdnn":0,
+    "hr_pnn50_proxy":0,
+    "hr_lf_hf_ratio":0
+  }
+]

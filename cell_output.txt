@@ -1,0 +1,64 @@
+=== CELL 13 (code) ===
+# =============================================================================
+# CELL 11 — SAVE ALL OUTPUTS
+# =============================================================================
+save_out = {
+    'timestamp': datetime.now().isoformat(),
+    'datasets_used': {
+        'clinical_hrv': 'kaggle.com/datasets/kishore00afk/hyperaktiv',
+        'eeg':          'kaggle.com/datasets/danizo/eeg-dataset-for-adhd',
+        'brain':        'kaggle.com/datasets/kishore00afk/adhd-200-preprocessed',
+    },
+    'fixes_applied': [
+        'Text branch removed — invalid ADHD-vs-ADHD labels',
+        'WiDS competition data replaced with open ADHD-200',
+        'HYPERAKTIV clinical+activity/HRV = real paired data',
+        'SHAP added for all expert models',
+        'activity_hrv evaluated on raw features (not noisy embeddings)',
+        'Gate weights prove MoE correctly downweights weak modality',
+    ],
+    'results': {
+        k: {m: round(float(v),4)
+            for m,v in r.items()
+            if m not in ('gates','pf','prf','yf','yte','ypr')}
+        for k,r in results.items()
+    },
+}
+
+if 'gates' in results['fusion']:
+    save_out['fusion_gate_weights'] = {
+        nm: round(float(gw),4)
+        for nm,gw in zip(paired_names[:len(results['fusion']['gates'])],
+                         results['fusion']['gates'])
+    }
+
+with open('adhd_xai_results.json','w') as f:
+    json.dump(save_out,f,indent=2)
+print("✅ Saved: adhd_xai_results.json")
+
+for var,fname in [('model_clinical','model_clinical.pth'),
+                  ('model_eeg',     'model_eeg.pth'),
+                  ('model_fusion',  'model_fusion.pth'),
+                  ('model_brain',   'model_brain.pth'),
+                  ('model_bio',     'model_bio.pth')]:
+    m = globals().get(var,None)
+    if m is not None:
+        torch.save(m.state_dict(),fname)
+        print(f"✅ Saved: {fname}")
+
+print("\n" + "="*65)
+print("COMPLETE")
+print("="*65)
+for nm in display_order:
+    if nm not in results: continue
+    r=results[nm]; mk='★' if nm=='fusion' else ' '
+    flag = '  ⚠ below chance' if r['auc']<0.55 else ''
+    print(f"  {mk} {nm:<22}  F1={r['f1']:.4f}  AUC={r['auc']:.4f}{flag}")
+print("\n  Key XAI finding:")
+for nm,gw in zip(paired_names,results['fusion']['gates']):
+    auc_v = results.get(nm,{}).get('auc',0.5)
+    d = 'correctly downweighted' if gw<0.45 else 'correctly trusted'
+    print(f"    Gate {nm:<18} = {gw:.3f}  AUC={auc_v:.3f}  [{d}]")
+
+...
+

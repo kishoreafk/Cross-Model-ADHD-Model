@@ -1,0 +1,294 @@
+=== CELL 3 ===
+# =============================================================================
+# CELL 2 — CLINICAL BRANCH: Load HYPERAKTIV + Build Feature Matrix
+# =============================================================================
+print("\n" + "="*65)
+print("CLINICAL BRANCH — HYPERAKTIV")
+print("="*65)
+print("Dataset: kaggle.com/datasets/kishore00afk/hyperaktiv")
+print("  51 subjects (25 ADHD, 26 HC) | Clinical + CPT + actigraphy + HRV")
+print()
+
+HP = PATHS['hyperaktiv']
+
+patient_info = pd.read_csv(os.path.join(HP, 'patient_info.csv'), sep=';')
+features_df  = pd.read_csv(os.path.join(HP, 'features.csv'),     sep=';')
+
+cpt_path = os.path.join(HP, 'CPT_II_ConnersContinuousPerformanceTest.csv')
+cpt_df   = pd.read_csv(cpt_path, sep=';') if os.path.exists(cpt_path) else None
+
+for df in [patient_info, features_df]:
+    df['ID'] = df['ID'].astype(int)
+
+print(f"  patient_info: {patient_info.shape}  features: {features_df.shape}")
+print(f"  ADHD dist: {patient_info['ADHD'].value_counts().to_dict()}")
+
+# ── Merge features with labels ────────────────────────────────────────────
+merged = pd.merge(features_df,
+                  patient_info[['ID','ADHD','AGE','SEX']],
+                  on='ID', how='inner')
+
+# ── CPT-II features ───────────────────────────────────────────────────────
+if cpt_df is not None:
+    cpt_df['ID'] = cpt_df['ID'].astype(int)
+    score_cols   = [c for c in cpt_df.columns
+                    if any(k in c for k in ['TScore','Score','Percent',
+                                             'Index','Confidence'])]
+    trial_cols   = [c for c in cpt_df.columns if c.startswith('Trial')]
+    if trial_cols:
+        rt = cpt_df[trial_cols].apply(pd.to_numeric, errors='coerce')
+        cpt_feats = pd.DataFrame({'ID': cpt_df['ID']})
+        cpt_feats['cpt_rt_mean'] = rt.mean(axis=1)
+        cpt_feats['cpt_rt_std']  = rt.std(axis=1)
+        cpt_feats['cpt_rt_cv']   = (rt.std(axis=1)
+                                    / (rt.mean(axis=1) + 1e-8))
+        n = len(trial_cols)
+        if n >= 6:
+            t = n // 3
+            cpt_feats['cpt_vigilance_decrement'] = (
+                rt.iloc[:, -t:].mean(axis=1)
+                - rt.iloc[:, :t].mean(axis=1))
+        if score_cols:
+            cpt_feats = pd.concat([cpt_feats, cpt_df[score_cols]], axis=1)
+        merged = pd.merge(merged, cpt_feats, on='ID', how='left')
+
+# ── Activity + HRV time-series stats ─────────────────────────────────────
+def ts_stats(path, prefix):
+    feats = {}
+    if not os.path.exists(path):
+        return feats
+    for fn in sorted(os.listdir(path)):
+        if not fn.endswith('.csv'):
+            continue
+        m = re.search(r'(\d+)', fn)
+        if not m:
+            continue
+        pid = int(m.group(1))
+        try:
+            df_ts = None
+            for sep in [';', ',']:
+                try:
+                    df_ts = pd.read_csv(os.path.join(path, fn),
+                                        sep=sep, skiprows=2)
+                    if df_ts.shape[1] > 1:
+                        break
+                except Exception:
+                    pass
+            if df_ts is None:
+                continue
+            num = df_ts.select_dtypes(include=[np.number]).columns
+            if len(num) == 0:
+                continue
+            sig = df_ts[num[-1]].dropna().values
+            if len(sig) < 10:
+                continue
+            feats[pid] = {
+                f'{prefix}mean':     float(np.mean(sig)),
+                f'{prefix}std':      float(np.std(sig)),
+                f'{prefix}median':   float(np.median(sig)),
+                f'{prefix}range':    float(np.ptp(sig)),
+                f'{prefix}skew':     float(skew(sig)),
+                f'{prefix}kurtosis': float(kurtosis(sig)),
+            }
+            if 'hr' in prefix:
+                feats[pid][f'{prefix}rmssd'] = float(
+                    np.sqrt(np.mean(np.diff(sig)**2)))
+        except Exception:
+            continue
+    return feats
+
+for feat_dict, prefix in [
+    (ts_stats(os.path.join(HP,'activity_data'), 'act_'), 'act_'),
+    (ts_stats(os.path.join(HP,'hrv_data'),      'hr_'),  'hr_'),
+]:
+    if feat_dict:
+        df_f = pd.DataFrame.from_dict(feat_dict, orient='index').reset_index()
+        df_f.rename(columns={'index': 'ID'}, inplace=True)
+        df_f['ID'] = df_f['ID'].astype(int)
+        merged = pd.merge(merged, df_f, on='ID', how='left')
+        print(f"  Added {prefix.strip('_')} features: {len(feat_dict)} subjects")
+
+# ── Build feature matrix ──────────────────────────────────────────────────
+exclude = {'ID','ADHD','AGE','SEX','EDUCATION','MEDICATION','study_id'}
+feat_cols = [c for c in merged.columns
+             if c not in exclude
+             and merged[c].dtype in ['float64','int64','float32','int32']
+             and merged[c].nunique() > 1]
+
+X_clin_raw = merged[feat_cols].values.astype(float)
+y_clinical  = merged['ADHD'].values.astype(int)
+subj_ids    = merged['ID'].values
+
+has_med          = 'MEDICATION' in merged.columns
+medication_status 
+
+=== CELL 6 ===
+# =============================================================================
+# CELL 5 — ACTIVITY/HRV BRANCH (richer features, same HYPERAKTIV subjects)
+# =============================================================================
+print("\n" + "="*65)
+print("ACTIVITY/HRV BRANCH — HYPERAKTIV (richer features)")
+print("="*65)
+
+def extract_rich_ts_features(filepath, prefix):
+    feats = {}
+    try:
+        df_ts = None
+        for sep in [';', ',']:
+            try:
+                df_ts = pd.read_csv(filepath, sep=sep, skiprows=2)
+                if df_ts.shape[1] > 1:
+                    break
+            except Exception:
+                pass
+        if df_ts is None:
+            return {}
+        num_cols = df_ts.select_dtypes(include=[np.number]).columns
+        if len(num_cols) == 0:
+            return {}
+        sig = df_ts[num_cols[-1]].dropna().values.astype(float)
+        if len(sig) < 20:
+            return {}
+        feats[f'{prefix}mean']       = float(np.mean(sig))
+        feats[f'{prefix}std']        = float(np.std(sig))
+        feats[f'{prefix}median']     = float(np.median(sig))
+        feats[f'{prefix}range']      = float(np.ptp(sig))
+        feats[f'{prefix}skew']       = float(skew(sig))
+        feats[f'{prefix}kurtosis']   = float(kurtosis(sig))
+        feats[f'{prefix}iqr']        = float(np.percentile(sig,75)
+                                              - np.percentile(sig,25))
+        feats[f'{prefix}p10']        = float(np.percentile(sig,10))
+        feats[f'{prefix}p90']        = float(np.percentile(sig,90))
+        feats[f'{prefix}cv']         = float(np.std(sig)/(np.mean(sig)+1e-8))
+        above = (sig > np.mean(sig)).astype(int)
+        feats[f'{prefix}transitions']= float(np.sum(np.diff(above)!=0))
+        if 'act' in prefix:
+            thr    = np.percentile(sig, 25)
+            active = (sig > thr).astype(int)
+            starts = np.where(np.diff(np.concatenate([[0],active]))==1)[0]
+            ends   = np.where(np.diff(np.concatenate([active,[0]]))==-1)[0]
+            bouts  = ends - starts + 1
+            if len(bouts) > 0:
+                feats[f'{prefix}n_bouts']         = float(len(bouts))
+                feats[f'{prefix}mean_bout_len']   = float(np.mean(bouts))
+                feats[f'{prefix}short_bout_frac'] = float(
+                    np.sum(bouts<=3)/(len(bouts)+1e-8))
+        if 'hr' in prefix:
+            diffs = np.diff(sig)
+            feats[f'{prefix}rmssd']      = float(np.sqrt(np.mean(diffs**2)))
+            feats[f'{prefix}sdnn']       = float(np.std(sig))
+            feats[f'{prefix}pnn50_proxy']= float(
+                np.sum(np.abs(diffs) > np.percentile(np.abs(diffs),50))
+                / (len(diffs)+1e-8))
+            if len(sig) >= 64:
+                try:
+                    freqs, psd = sp_welch(sig, nperseg=min(64,len(sig)//2))
+                    lf = (freqs>=0.04)&(freqs<0.15)
+                    hf = (freqs>=0.15)&(freqs<0.40)
+                    feats[f'{prefix}lf_hf_ratio'] = float(
+                        psd[lf].sum()/(psd[hf].sum()+1e-8))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    return feats
+
+y_bio_all = patient_info.set_index('ID')['ADHD'].to_dict()
+all_bio   = {}
+for dpath, prefix in [(os.path.join(HP,'activity_data'),'act_'),
+                      (os.path.join(HP,'hrv_data'),     'hr_')]:
+    if not os.path.exists(dpath):
+        continue
+    for fn in sorted(os.listdir(dpath)):
+        if not fn.endswith('.csv'):
+            continue
+        m = re.search(r'(\d+)', fn)
+        if not m:
+            continue
+        pid   = int(m.group(1))
+        feats = extract_rich_ts_features(os.path.join(dpath,fn), prefix)
+        if feats:
+            if pid not in all_bio:
+                all_bio[pid] = {}
+            all_bio[pid].update(feats)
+
+bio_rows = []
+for pid, feats in all_bio.items():
+    if pid in y_bio_all:
+        feats['ID'] = pid; feats['ADHD'] = y_bio_all[pid]
+        bio_rows.append(feats)
+
+bio_df    = pd.DataFrame(bio_rows).fillna(0)
+bio_cols  = [c for c in bio_df.columns if c not in ['ID','ADHD']]
+X_bio_raw = bio_df[bio_cols].values.astype(float)
+X_bio_raw = np.nan_to_num(X_bio_raw, nan=0, posinf=0, neginf=0)
+y_bio     = bio_df['ADHD'].values.astype(int)
+
+print(f"  Subjects: {len(y_bio)}  ADHD={sum(y_bio==1)}  HC={sum(y_bio==0)}")
+print(f"  Features: {X_bio_raw.shape[1]}")
+
+# XGBoost 5-fold CV check
+bio_cv_preds = np.zeros(len(y_bio))
+bio_cv_probs = np.zeros(len(y_bio))
+xgb_bio_base = xgb.XGBClassifier(n_estimators=200, max_depth=4,
+                                   random_state=42, eval_metric='logloss',
+                                   **xgb_hw)
+sc_bio_cv = StandardScaler()
+X_bio_sc  = sc_bio_cv.fit_transform(X_bio_raw)
+for tri, vai in cv5.split(X_bio_sc, y_bio):
+    sc_tmp = StandardScaler()
+    Xtr_b  = sc_tmp.fit_transform(X_bio_raw[tri])
+    Xva_b  = sc_tmp.transform(X_bio_raw[vai])
+    m_bio  = deepcopy(xgb_bio_base)
+    m_bio.fit(Xtr_b, y_bio[tri])
+    bio
+
+=== CELL 9 ===
+# =============================================================================
+# ALIGNMENT CELL — match bio subjects to clinical subjects
+# =============================================================================
+# bio branch loaded 96 subjects, clinical loaded 85.
+# The 11 extra bio subjects have no clinical record — exclude them
+# so both modalities share the same 85 subjects in the same order.
+
+import numpy as np
+
+print("Aligning activity_hrv subjects to clinical subjects...")
+
+# bio_df and merged both exist from their respective cells
+# Find the intersection of subject IDs
+clin_ids = set(merged['ID'].values.astype(int))
+bio_mask  = np.array([pid in clin_ids for pid in bio_df['ID'].values.astype(int)])
+
+# Filter bio data to matching subjects, then sort both by ID to align order
+bio_df_aligned   = bio_df[bio_mask].copy()
+bio_df_aligned   = bio_df_aligned.set_index('ID')
+
+merged_sorted    = merged.sort_values('ID').reset_index(drop=True)
+bio_df_aligned   = bio_df_aligned.loc[merged_sorted['ID'].values].reset_index()
+
+# Rebuild bio features and labels in the same order as clinical
+bio_cols_aligned = [c for c in bio_df_aligned.columns if c not in ['ID','ADHD']]
+X_bio_raw        = bio_df_aligned[bio_cols_aligned].values.astype(float)
+X_bio_raw        = np.nan_to_num(X_bio_raw, nan=0, posinf=0, neginf=0)
+y_bio            = bio_df_aligned['ADHD'].values.astype(int)
+
+print(f"  Clinical subjects : {len(merged_sorted)}")
+print(f"  Bio subjects      : {len(bio_df_aligned)}")
+print(f"  Labels match      : {np.array_equal(y_bio, y_clinical)}")
+
+# Rebuild bio embeddings from the aligned features
+from sklearn.preprocessing import StandardScaler
+sc_b_aligned = StandardScaler()
+X_bio_scaled = sc_b_aligned.fit_transform(X_bio_raw)
+X_bio_t      = torch.FloatTensor(X_bio_scaled).to(device)
+model_bio.eval()
+with torch.no_grad():
+    _, bio_embeddings = model_bio(X_bio_t)
+bio_embeddings = bio_embeddings.detach().cpu()
+bio_labels     = y_bio.copy()
+
+print(f"  bio_embeddings    : {bio_embeddings.shape}")
+print(f"  clinical_embeddings: {clinical_embeddings.shape}")
+print("  ✅ Subjects aligned — fusion will now include both modalities")
+
