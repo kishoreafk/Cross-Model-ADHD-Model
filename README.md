@@ -37,6 +37,20 @@ This project implements an **Explainable Multimodal AI system** for Attention-De
 
 ---
 
+## 📸 Screenshots & Visualizations
+
+<div align="center">
+
+![ADHD Explainability Dashboard](Images/Adhd.png)
+*ADHD Explainability Dashboard — SHAP feature importance and DSM-5 criterion mapping*
+
+![ADHD Brain Visualization](Images/Adhd%201.png)
+*Interactive 3D Brain Visualization with region highlighting*
+
+</div>
+
+---
+
 ## 🏗️ Architecture
 
 ### Model Components
@@ -345,7 +359,7 @@ The training notebook (`adha-new-method (2).ipynb`) implements a 10-cell pipelin
 
 ---
 
-## 🧪 Explainability
+## 🧪 E xplainability
 
 ### SHAP Feature Importance
 
