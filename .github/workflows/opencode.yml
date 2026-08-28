@@ -1,0 +1,33 @@
+name: opencode
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  opencode:
+    if: |
+      contains(github.event.comment.body, '/oc') ||
+      contains(github.event.comment.body, '/opencode')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Run OpenCode
+        uses: anomalyco/opencode/github@latest
+        with:
+          model: opencode/muse-spark-1.2-contributor-free
+          # share: true
+          # Uncomment to use GitHub token directly without installing GitHub App:
+          # use_github_token: true
+        # No API key required for opencode/muse-spark-1.2-contributor-free (free tier via OpenCode Zen)
+        # For paid opencode/muse-spark-1.2 or anthropic/* models, add env:
+        # env:
+        #   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
